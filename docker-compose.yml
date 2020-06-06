@@ -1,0 +1,57 @@
+version: "3.3"
+
+services:
+  reverse-proxy:
+    image: traefik
+    container_name: "traefik_public"
+    restart: always
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --api.insecure
+      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.leresolver.acme.email=m.kucuk@batunet.com
+      - --certificatesresolvers.leresolver.acme.storage=/acme.json
+      - --certificatesresolvers.leresolver.acme.tlschallenge=true
+      # Logs to Specific
+      #- --log.level=DEBUG
+      #- --log.filePath=/var/log/traefik.log
+      #- --log.format=json
+      # - --accesslog=true
+      # - --accesslog.filepath=/var/log/access.log
+      # - --accesslog.format=json
+      # - --accesslog.filters.statuscodes=300-302, 404
+      # - --accesslog.filters.retryattempts
+      # - --accesslog.filters.minduration=10ms
+      # - --accesslog.fields.defaultmode=keep
+      # - --accesslog.fields.names.ClientUsername=drop
+      # - --accesslog.fields.headers.defaultmode=keep
+      # - --accesslog.fields.headers.names.User-Agent=redact
+      # - --accesslog.fields.headers.names.Authorization=drop
+      # - --accesslog.fields.headers.names.Content-Type=keep
+    ports:
+    ports:
+      - 8080:8080
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme.json:/acme.json
+      #- ./logs:/var/log
+    labels:
+      - "traefik.http.routers.traefik.rule=Host(`traefik.sym`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.tls.certresolver=leresolver"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+    networks:
+      - public
+    logging:
+      options:
+        max-size: '2m'
+        max-file: '5'
+      driver: json-file
+
+networks:
+  public:
+    external: true
